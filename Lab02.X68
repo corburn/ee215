@@ -21,14 +21,14 @@ EndInitDataLoop
 
     LEA     DataAddress,A0  ; Initialize Sieve by moving A0 to the first prime number in the array
 PrimeLoop
-    CMP     #(DataAddress+Count*DataSize),A1
+    CMP.L   #EndDataAddress,A1
     BEQ     EndPrimeLoop
     MOVE.L  A0,A1            ; A1 is an iterator from the current prime A0 to the end of the array
     MOVE.L  (A0),D0          ; The prime A0 is the iterator step size, but needs to be scaled to the data size. 
     LSL     #(DataSize/2),D0 ; Scale step to data size
 SieveLoop                    ; Zero multiple of the prime stored at A0
     ADD.L   D0,A1
-    CMP     #(DataAddress+Count*DataSize),A1
+    CMP.L   #EndDataAddress,A1
     BEQ     NextPrimeLoop
     MOVE.L  #0,(A1)
     JMP     SieveLoop 
@@ -53,6 +53,7 @@ EndDataAddress  EQU DataAddress+(Max-Min)*DataSize
 Count       EQU Max-Min
 
     END    START        ; last line of source
+
 
 
 
