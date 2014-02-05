@@ -5,23 +5,22 @@
 * Description: Find prime numbers from Min to Max using
 * Eratosthenes Sieve. Min should be a prime number.
 *-----------------------------------------------------------
-    ORG    $1000
+    ORG    $0000
 START:
 * Initialize an array of integers from Min to Max starting at DataAddress
     LEA     DataAddress,A0
     MOVE.L  #Min,D0
-    MOVE.L  #(Count+1),D1
 InitDataLoop
     MOVE.L  D0,(A0)+
-    ADD.L   #1,D0           ; Increment value
-    SUB.L   #1,D1           ; Decrement loop count
-    BEQ     EndInitDataLoop ; Exit when count is 0
-    JMP     InitDataLoop
+    ADD.L   #1,D0
+    CMP.L   #EndDataAddress,A0
+    BEQ     EndInitDataLoop
+    BRA     InitDataLoop
 EndInitDataLoop
+    LEA     DataAddress,A0  ; Reset A0 to the beginning of the array
 
-    LEA     DataAddress,A0  ; Initialize Sieve by moving A0 to the first prime number in the array
 PrimeLoop
-    CMP.L   #EndDataAddress,A1
+    CMP.L   #EndDataAddress,A0
     BEQ     EndPrimeLoop
     MOVE.L  A0,A1            ; A1 is an iterator from the current prime A0 to the end of the array
     MOVE.L  (A0),D0          ; The prime A0 is the iterator step size, but needs to be scaled to the data size. 
@@ -29,28 +28,26 @@ PrimeLoop
 SieveLoop                    ; Zero multiple of the prime stored at A0
     ADD.L   D0,A1
     CMP.L   #EndDataAddress,A1
-    BEQ     NextPrimeLoop
+    BHS     NextPrimeLoop
     MOVE.L  #0,(A1)
-    JMP     SieveLoop 
+    BRA     SieveLoop 
 EndSieveLoop
 NextPrimeLoop               ; Move A0 until it refers to a non-zero value which should be prime
     ADD.L   #DataSize,A0
     TST.L   (A0)
     BNE     PrimeLoop       ; Continue the Eratosthenes Sieve
-    JMP     NextPrimeLoop
+    BRA     NextPrimeLoop
 EndNextPrimeLoop
 EndPrimeLoop
 
     STOP    #$2700
-    SIMHALT             ; halt simulator
 
 * Variables and constants
 Min         EQU 2
 Max         EQU 16
 DataSize    EQU 4
-DataAddress EQU 0
-EndDataAddress  EQU DataAddress+(Max-Min)*DataSize
-Count       EQU Max-Min
+DataAddress EQU $0060
+EndDataAddress  EQU DataAddress+(Max-Min+1)*DataSize
 
     END    START        ; last line of source
 
@@ -58,6 +55,8 @@ Count       EQU Max-Min
 
 
 
+
+    
 
 *~Font name~Courier New~
 *~Font size~10~
