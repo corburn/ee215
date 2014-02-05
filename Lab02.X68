@@ -7,32 +7,45 @@
 *-----------------------------------------------------------
     ORG    $0000
 START:
-* Initialize an array of integers from Min to Max starting at DataAddress
+* Initialize an array of long integers from Min to Max starting at DataAddress
     LEA     DataAddress,A0
-    MOVE.L  #Min,D0
+    MOVE.L  #Min,D3
 InitDataLoop
-    MOVE.L  D0,(A0)+
-    ADD.L   #1,D0
+    MOVE.L  D3,(A0)+
+    ADD.L   #1,D3
     CMP.L   #EndDataAddress,A0
     BEQ     EndInitDataLoop
     BRA     InitDataLoop
 EndInitDataLoop
-    LEA     DataAddress,A0  ; Reset A0 to the beginning of the array
-
+    LEA     DataAddress,A0     ; Reset A0 to the beginning of the array
+    
 PrimeLoop
-    CMP.L   #EndDataAddress,A0
+    CMP.L   #EndDataAddress,A0 ; Main loop for each element in the array
     BEQ     EndPrimeLoop
-    MOVE.L  A0,A1            ; A1 is an iterator from the current prime A0 to the end of the array
-    MOVE.L  (A0),D0          ; The prime A0 is the iterator step size, but needs to be scaled to the data size. 
-    LSL     #(DataSize/2),D0 ; Scale step to data size
-SieveLoop                    ; Zero multiple of the prime stored at A0
-    ADD.L   D0,A1
+    MOVE.L  A0,A1              ; A1 is an iterator from the current prime A0 to the end of the array
+    MOVE.L  (A0),D3
+    LSL     #(DataSize/2),D3   ; Scale the current prime by the data size for the iterator memory step size
+    
+    * Print the current prime as a decimal
+    MOVE.B  #15,D0
+    MOVE.L  (A0),D1
+    MOVE.B  #10,D2
+    TRAP    #15
+    * Print \r\n
+    MOVE.B  #6,D0
+    MOVE.B  #$0D,D1
+    TRAP    #15
+    MOVE.B  #$0A,D1
+    TRAP    #15
+    
+SieveLoop                    ; Zero multiples of the current prime
+    ADD.L   D3,A1
     CMP.L   #EndDataAddress,A1
     BHS     NextPrimeLoop
     MOVE.L  #0,(A1)
     BRA     SieveLoop 
 EndSieveLoop
-NextPrimeLoop               ; Move A0 until it refers to a non-zero value which should be prime
+NextPrimeLoop               ; Advance to the next prime
     ADD.L   #DataSize,A0
     TST.L   (A0)
     BNE     PrimeLoop       ; Continue the Eratosthenes Sieve
@@ -46,7 +59,7 @@ EndPrimeLoop
 Min         EQU 2
 Max         EQU 16
 DataSize    EQU 4
-DataAddress EQU $0060
+DataAddress EQU $00A0
 EndDataAddress  EQU DataAddress+(Max-Min+1)*DataSize
 
     END    START        ; last line of source
@@ -57,6 +70,7 @@ EndDataAddress  EQU DataAddress+(Max-Min+1)*DataSize
 
 
     
+
 
 *~Font name~Courier New~
 *~Font size~10~
