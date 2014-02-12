@@ -18,6 +18,7 @@ InitDataLoop
     BRA     InitDataLoop
 EndInitDataLoop
     LEA     DataAddress,A0     ; Reset A0 to the beginning of the array
+    MOVE.L  #0,D4              ; Prime counter variable
     
 PrimeLoop
     CMP.L   #EndDataAddress,A0 ; Main loop for each element in the array
@@ -38,6 +39,8 @@ PrimeLoop
     MOVE.B  #$0A,D1
     TRAP    #15
     
+    ADDI.L  #1,D4            ; Increment prime counter
+    
 SieveLoop                    ; Zero multiples of the current prime
     ADD.L   D3,A1
     CMP.L   #EndDataAddress,A1
@@ -53,25 +56,25 @@ NextPrimeLoop               ; Advance to the next prime
 EndNextPrimeLoop
 EndPrimeLoop
 
+    MOVE.B  #14,D0          ; Print prime total
+    LEA     Total,A1
+    TRAP    #15
+    MOVE.B  #15,D0
+    MOVE.L  D4,D1
+    MOVE.B  #10,D2
+    TRAP    #15
+
     STOP    #$2700
 
 * Variables and constants
 Min         EQU 2
-Max         EQU 16
+Max         EQU 1000
 DataSize    EQU 4
 DataAddress EQU $00A0
 EndDataAddress  EQU DataAddress+(Max-Min+1)*DataSize
+Total       DC.B    'Total Primes: ',0
 
     END    START        ; last line of source
-
-
-
-
-
-
-    
-
-
 *~Font name~Courier New~
 *~Font size~10~
 *~Tab type~1~
