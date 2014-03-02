@@ -4,19 +4,21 @@
 * Date       : 2014.02.26
 * Description:
 *-----------------------------------------------------------   
-    ORG    $1000
+    ORG    $800
 START:                      ; first instruction of program
+    BSR     PROMPT
     MOVE.L  #$0,SP
     LINK    A4,#-4*4        ; Create initial Stack Frame allocating space for n, x, y, and the result
-    MOVE.L  #$56,(-12,A4)   ; y
-    MOVE.L  #$34,(-8,A4)    ; x
-    MOVE.L  #$12,(-4,A4)    ; n
+    MOVE.L  D4,(-12,A4)     ; y
+    MOVE.L  D3,(-8,A4)      ; x
+    MOVE.L  D2,(-4,A4)      ; n
     BSR ACK
+    MOVE.L  (-4*4,A4),D5
     UNLK    A4
+    BSR     ANSWER
     STOP    #$2700
 
-PROMPT
-    MOVEM.L D0-A6,-(SP)    
+PROMPT   
     MOVE.L  #18,D0
     LEA     PromptN,A1
     TRAP    #15
@@ -27,7 +29,6 @@ PROMPT
     LEA     PromptY,A1
     TRAP    #15
     MOVE.L  D1,D4
-    MOVEM.L (SP)+,D0-A6
     RTS
     
 ANSWER    
@@ -56,39 +57,53 @@ ACK
     CMP.L   #0,D2
     BNE     YNOT0       ; if y != 0 goto YNOT0
     CMP.L   #3,D0
-    BEQ     NIS3        ; if n == 3 goto NIS3
     BHI     NGT3        ; if n > 3 goto NGT3
+    BEQ     NIS3        ; if n == 3 goto NIS3
     CMP.L   #1,D0
     BHI     NIS2        ; if n > 1 goto NIS2
     BEQ     NIS1        ; if n == 1 goto NIS1
+    BLS     NIS0        ; if n < 1 goto NIS0. n should never be negative
 NIS1
-    MOVE.L  D1,(20,A4)  ; result = x
+    MOVE.L  D1,(-16,A4)  ; result = x
     BRA DONE
 NIS2
-    MOVE.L  #0,(20,A4)  ; result = 0
+    MOVE.L  #0,(-16,A4)  ; result = 0
     BRA DONE
 NIS3
-    MOVE.L  #1,(20,A4)  ; result = 1
+    MOVE.L  #1,(-16,A4)  ; result = 1
     BRA DONE
 NGT3
-    MOVE.L  #2,(20,A4)  ; result = 2
+    MOVE.L  #2,(-16,A4)  ; result = 2
     BRA DONE
 YNOT0
     CMP.L   #0,D0
-    BNE     RECURSE     ; if y != 0 && n != 0
+    BNE     RECURSE     ; if y != 0 && n != 0 goto RECURSE
+NIS0
     ADDI.L  #1,D1
-    MOVE.L  D1,(20,A4)  ; result = x + 1
+    MOVE.L  D1,(-16,A4)  ; result = x + 1
     BRA DONE
-    * Recursive call
 RECURSE
+    * Outer recursive call
     LINK    A4,#-4*4    ; Create a new Stack Frame allocating space for n,x,y, and the result
     * Put the necessary values of n,x,and y into the new Stack Frame
     MOVE.L  D1,(-12,A4) ; y = x
+    * Inner recursive call
+    LINK    A4,#-4*4    ; Create a new Stack Frame allocating space for n,x,y, and the result
+    * Put the necessary values of n,x,and y into the new Stack Frame
+    SUBI.L  #1,D2       ; D2 = y - 1
+    MOVE.L  D2,(-12,A4) ; y = y - 1
+    MOVE.L  D1,(-8,A4)  ; x = x
+    MOVE.L  D0,(-4,A4)  ; n = n
+    BSR     ACK
+    MOVE.L  (-4*4,A4),D1 ; D1 = A(n,x,y-1)
+    UNLK    A4          ; Collapse inner Stack Frame
     MOVE.L  D1,(-8,A4)  ; x = A(n,x,y-1)
     SUBI.L  #1,D0       ; D0 = n - 1
     MOVE.L  D0,(-4,A4)  ; n = n - 1
     BSR     ACK
-    UNLK    A4          ; Collapse Stack Frame
+    MOVE.L  (-4*4,A4),D1 ; D1 = A(n-1, A(n,x,y-1), x)
+    UNLK    A4          ; Collapse outer Stack Frame
+    MOVE.L  D1,(-4*4,A4) ; result = A(n-1, A(n,x,y-1), x)
 DONE
     MOVEM.L (SP)+,D0-D2 ; Pop registers off Stack
     RTS
@@ -101,6 +116,12 @@ AnswerOpen  DC.B 'Answer: A(',0
 Comma       DC.B ',',0
 AnswerClose DC.B ') = ',0
     END    START
+
+
+
+
+
+
 
 *~Font name~Courier New~
 *~Font size~10~
